@@ -38,18 +38,42 @@ export async function crust<T=Record<string,unknown>>(endpoint:string,body?:unkn
 }
 export function source(data:Omit<Source,"id"|"fetchedAt">):Source {return {...data,id:`s_${randomUUID().slice(0,8)}`,fetchedAt:new Date().toISOString()};}
 export async function searchWeb(query:string,report?:Reporter):Promise<Source[]> {
-  const result=await crust<{results?:{title?:string;url?:string;link?:string;snippet?:string;description?:string}[]}>("/web/search/live",{query,sources:["web"]},report);
-  return (result.results||[]).filter(x=>{const url=safeUrl(x.url||x.link||"");return url&&!/^(?:www\.)?google\.[^/]+\/goto\b/i.test(new URL(url).host+new URL(url).pathname);}).slice(0,8).map(x=>source({title:x.title||"Search result",url:safeUrl(x.url||x.link||""),content:x.snippet||x.description||"",provider:"Crustdata",kind:"search",status:"snippet",endpoint:"/web/search/live"}));
+  type SearchResult={title?:string;url?:string;link?:string;snippet?:string;description?:string};
+  const usable=(x:SearchResult)=>{const url=safeUrl(x.url||x.link||"");return url&&!/^(?:www\.)?google\.[^/]+\/goto\b/i.test(new URL(url).host+new URL(url).pathname);};
+  let sources:Source[]=[];let primaryError:unknown;
+  try {
+    const result=await crust<{results?:SearchResult[]}>("/web/search/live",{query,sources:["web"]},report);
+    sources=(result.results||[]).filter(usable).slice(0,8).map(x=>source({title:x.title||"Search result",url:safeUrl(x.url||x.link||""),content:x.snippet||x.description||"",provider:"Crustdata",kind:"search",status:"snippet",endpoint:"/web/search/live"}));
+  }catch(e){primaryError=e;}
+  const key=process.env.FIRECRAWL_API_KEY;
+  if(sources.length<3&&key) {
+    try {
+      const hash=createHash("sha256").update(`firecrawl-search:${query}`).digest("hex");
+      let extra=await readCache(hash) as Source[]|null;
+      if(extra)await report?.({provider:"Firecrawl",endpoint:"/v2/search",cached:true,ok:true,message:"Saved supplemental search reused."});
+      else {
+        const res=await fetch("https://api.firecrawl.dev/v2/search",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({query,limit:5,sources:[{type:"web"}]}),signal:AbortSignal.timeout(60000),cache:"no-store"});
+        if(!res.ok)throw new ProviderError("Firecrawl",res.status,errorMessage(res.status,await res.text()));
+        const out=await res.json() as {success?:boolean;data?:{web?:SearchResult[]}};
+        if(!out.success)throw new Error("Supplemental search was unavailable.");
+        extra=(out.data?.web||[]).filter(usable).map(x=>source({title:x.title||"Search result",url:safeUrl(x.url||x.link||""),content:x.description||x.snippet||"",provider:"Firecrawl",kind:"search",status:"snippet",endpoint:"/v2/search"}));
+        await writeCache(hash,extra);await report?.({provider:"Firecrawl",endpoint:"/v2/search",cached:false,ok:true,message:"Supplemented limited web results with original-source discovery."});
+      }
+      const seen=new Set(sources.map(s=>s.url));for(const s of extra)if(!seen.has(s.url)){sources.push(s);seen.add(s.url);}
+    }catch(e){await report?.({provider:"Firecrawl",endpoint:"/v2/search",cached:false,ok:false,message:e instanceof ProviderError?e.message:"Supplemental search unavailable."});}
+  }
+  if(!sources.length&&primaryError)throw primaryError;
+  return sources.slice(0,8);
 }
-export async function readPage(url:string,report?:Reporter):Promise<Source|null> {
+export async function readPage(url:string,report?:Reporter,includePageChrome=false):Promise<Source|null> {
   url=safeUrl(url);if(!url)return null;
   const key=process.env.FIRECRAWL_API_KEY;
-  const hash=createHash("sha256").update(`page:${url}`).digest("hex");
+  const hash=createHash("sha256").update(`page:${includePageChrome?"full":"main"}:${url}`).digest("hex");
   const old=await readCache(hash) as Source|null;
   if(old){await report?.({provider:old.provider,endpoint:"page extraction",cached:true,ok:true,message:"Saved source reused."});return {...old,cached:true};}
   if(key) {
     try {
-      const res=await fetch("https://api.firecrawl.dev/v2/scrape",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({url,formats:["markdown"],onlyMainContent:true,timeout:45000,maxAge:0}),signal:AbortSignal.timeout(55000)});
+      const res=await fetch("https://api.firecrawl.dev/v2/scrape",{method:"POST",headers:{Authorization:`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({url,formats:["markdown"],onlyMainContent:!includePageChrome,timeout:45000,maxAge:0}),signal:AbortSignal.timeout(55000)});
       if(!res.ok)throw new ProviderError("Firecrawl",res.status,errorMessage(res.status,await res.text()));
       const out=await res.json();if(!out.success||!out.data?.markdown)throw new Error("No readable text returned.");
       const s=source({title:out.data.metadata?.title||new URL(url).hostname,url,content:String(out.data.markdown).slice(0,22000),provider:"Firecrawl",kind:/github.com/.test(url)?"project":"article",status:"fetched",publishedAt:out.data.metadata?.publishedTime});
@@ -59,7 +83,7 @@ export async function readPage(url:string,report?:Reporter):Promise<Source|null>
   try {
     const rows=await crust<{success?:boolean;url?:string;title?:string;content?:string}[]>("/web/enrich/live",{urls:[url]},report);
     const row=rows.find(r=>r.success&&r.content);if(!row?.content)return null;
-    const $=cheerio.load(row.content);$("script,style,nav,footer,header,noscript,svg").remove();
+    const $=cheerio.load(row.content);$(includePageChrome?"script,style,noscript,svg":"script,style,nav,footer,header,noscript,svg").remove();
     const s=source({title:row.title||new URL(url).hostname,url,content:$("body").text().replace(/\s+/g," ").slice(0,22000),provider:"Crustdata",kind:"article",status:"fetched",endpoint:"/web/enrich/live"});
     await writeCache(hash,s);return s;
   }catch{return null;}

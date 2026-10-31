@@ -10,7 +10,7 @@ Hirox discovers real companies and people through Crustdata, reads source materi
 2. Copy `.env.example` to `.env.local` and set the Crustdata, OpenAI, Firecrawl, and Supabase credentials. Keep this file private.
 3. Run `npm run check:keys` and `node --env-file=.env.local scripts/verify-connections.mjs` to check the accounts.
 4. Run `npm run db:setup` to create the private Supabase tables, then set `HIROX_STORAGE=supabase`.
-5. Run `npm run dev` and open http://127.0.0.1:3000. If `HIROX_ACCESS_PASSWORD` is set, enter it in the sign-in screen.
+5. Run `npm run dev` and open http://127.0.0.1:3000. The demo opens without a workspace password.
 
 When `HIROX_STORAGE=supabase`, research, sources, and drafts are saved in private Supabase tables. The database connection string is needed only for setup; the app uses the Supabase server key at runtime. For an IPv4-only machine, use the **Session pooler** connection string from the project's Connect panel. Local workflow data and test notes stay in ignored folders. Never commit credentials or saved private research.
 
@@ -19,6 +19,8 @@ When `HIROX_STORAGE=supabase`, research, sources, and drafts are saved in privat
 Hirox researches real companies and independent builders, gives an evidence-linked recommendation relative to the thesis, and stops at an editable email draft. It never sends email. The investor can inspect every source and the activity log. The first available run may take several minutes because it verifies multiple records and source pages.
 
 ## Product scope
+
+Ready to host: [Vercel deployment instructions](DEPLOY_VERCEL.md). Ready to record: [two-minute demo script and verified live records](DEMO_SCRIPT.md).
 
 See [product brief](FIRSTSIGNAL_PRODUCT_BRIEF.md), [real-data demo plan](FIRSTSIGNAL_DEMO_PLAN.md), and [stack](HIROX_BUILD_STACK.md).
 

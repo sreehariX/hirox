@@ -1,4 +1,4 @@
-# Hirox — working name and selected build stack
+# Hirox — implemented build stack
 
 Updated: 31 October 2026, Asia/Calcutta.
 
@@ -18,15 +18,15 @@ Sources:
 | Layer | Choice | Purpose |
 | --- | --- | --- |
 | Website and server endpoints | Next.js, React, TypeScript | One codebase for the investor workspace and server-side API access. |
-| UI styling and components | Tailwind CSS, shadcn/ui, Lucide icons | Build the discovery cards, evidence panels, and draft editor. |
+| UI styling and components | Custom CSS and React components, Lucide icons | Discovery cards, evidence panels, and an editable draft workspace. |
 | Relationship graph | React Flow | Inspect people, companies, projects, posts, and evidence connections. |
 | Hosting | Vercel | Deploy the website and server functions; obtain a public demo URL. |
-| Long-running research | Vercel Workflow SDK | Execute bounded research steps with persistence, retries, and recovery. Check project-plan access and package compatibility during implementation. |
-| App database and files | Supabase Postgres and Storage | Save prospects, research runs, source metadata/excerpts, decisions, and drafts. Use Supabase Auth if account login is included. |
+| Long-running research | Vercel Workflow SDK 5.2.3 | Execute persisted research steps. Local execution was tested; hosted execution uses Vercel's managed workflow runtime. |
+| App database | Supabase Postgres | Save research runs, source excerpts, decisions, drafts, and cached provider responses in server-only tables. |
 | Primary external data | Crustdata | Discover and enrich people/companies; retrieve supported job, social, and web evidence. |
 | Additional page extraction | Firecrawl | Read selected accessible articles, blogs, product pages, and interview text when needed. Crustdata remains the primary research layer. |
-| Model provider | OpenAI | Plan tool use, extract structured findings, compare evidence against the thesis, and generate grounded drafts. Choose the exact model after checking account access and a small real-data trial. |
-| Model integration | Vercel AI SDK, OpenAI provider, Zod | Tool calling, structured result validation, and incremental output. |
+| Model provider | OpenAI, gpt-5-mini | Research planning, structured findings, thesis qualification, and grounded drafts; tested with real runs. |
+| Model integration | OpenAI JavaScript SDK, Responses API, Zod | Structured output parsing and validation. |
 | Source control/submission | GitHub | Store source, setup instructions, architecture, and the final hackathon repository. Never commit secrets. |
 | Debugging | Vercel logs, workflow history, saved application events | Diagnose failed calls, incomplete steps, and source coverage. No Langfuse. |
 
@@ -46,9 +46,9 @@ All provider credentials are used server-side. The browser receives only permitt
 
 ## Accounts and access
 
-- Confirmed active by the user: Crustdata and OpenAI.
-- Still to configure in the workspace/deployment: provider secrets; Firecrawl key; Supabase project connection; Vercel deployment access; GitHub repository access for submission.
-- Check Crustdata endpoint permissions, especially indexed Social Post Search, before relying on gated fields.
+- Verified through live calls: Crustdata, OpenAI, Firecrawl, and Supabase. Real completed research and drafts are saved in Supabase.
+- GitHub repository access is configured. The remaining release step is importing the repository and private environment file into Vercel; see [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md).
+- Company, people, career, social-post, job, and web requests succeeded with the configured Crustdata account. Future missing data or permissions remain visible in research coverage.
 - A custom domain is optional for the hackathon. An available Vercel deployment URL is sufficient; no Hirox-related URL availability has been checked.
 - Langfuse is explicitly excluded. AgentMail, voice/video APIs, payments, AWS, and additional model providers are outside this first build.
 
@@ -61,5 +61,5 @@ All provider credentials are used server-side. The browser receives only permitt
 - https://supabase.com/docs
 - https://docs.firecrawl.dev/features/scrape
 - https://reactflow.dev/
-- https://ai-sdk.dev/docs/introduction
+- https://platform.openai.com/docs/api-reference/responses
 

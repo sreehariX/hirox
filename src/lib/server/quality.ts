@@ -1,4 +1,7 @@
 import type { Prospect, Source, CitedPoint } from "../types";
+export function declinesGeneratedEmail(sources:Source[]) {
+  return sources.some(s=>s.status==="fetched"&&/(?:AI[-\s]?generated\s+emails?[\s\S]{0,120}(?:never respond|do not send|don't send|please spare)|(?:do not send|don't send)[\s\S]{0,80}AI[-\s]?(?:generated|written)[\s\S]{0,25}emails?)/i.test(s.content));
+}
 export function validPoints(points:CitedPoint[],sources:Source[]) {
   const ids=new Set(sources.map(s=>s.id));
   return points.map(p=>({...p,sourceIds:[...new Set(p.sourceIds)].filter(id=>ids.has(id))})).filter(p=>p.sourceIds.length>0);

@@ -1,6 +1,6 @@
 import { describe,it,expect } from "vitest";
 import { exampleRun } from "../example";
-import { validateAssessment } from "./quality";
+import { declinesGeneratedEmail,validateAssessment } from "./quality";
 
 function company(){return structuredClone(exampleRun().prospects[0]);}
 describe("evidence-based recommendations",()=>{
@@ -28,5 +28,14 @@ describe("evidence-based recommendations",()=>{
     expect(checked.reasonsFor).toHaveLength(0);
     expect(checked.whyNow.sourceIds).toHaveLength(0);
     expect(checked.decision).toBe("Watch");
+  });
+});
+describe("contact preference",()=>{
+  it("detects a stated refusal of AI-generated email in a readable source",()=>{
+    const p=company();p.sources[0].content="I receive dozens of AI-generated emails a week. I never respond to any of them. Please spare me.";
+    expect(declinesGeneratedEmail(p.sources)).toBe(true);
+  });
+  it("does not mistake an ordinary AI evaluation article for a refusal",()=>{
+    expect(declinesGeneratedEmail(company().sources)).toBe(false);
   });
 });
