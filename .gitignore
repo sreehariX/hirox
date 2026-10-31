@@ -1,0 +1,17 @@
+node_modules/
+.next/
+.vercel/
+.env
+.env.*
+!.env.example
+.hirox/
+.workflow-data/
+.workflow/
+test-results/
+playwright-report/
+coverage/
+*.tsbuildinfo
+npm-debug.log*
+*.pem
+*.key
+.DS_Store
