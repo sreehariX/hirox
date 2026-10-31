@@ -12,4 +12,14 @@ export function safeUrl(value: string): string {
 }
 export function domainOf(value: string) { try { return new URL(value.includes("://") ? value : `https://${value}`).hostname.replace(/^www\./, ""); } catch { return ""; } }
 export function initials(name: string) { return name.split(/[\s.-]+/).filter(Boolean).slice(0,2).map(x => x[0]).join("").toUpperCase(); }
+export function readableEvidence(content: string) {
+  return content
+    .replace(/!\[[^\]]*\]\([^\n)]*\)/g, "")
+    .replace(/\[([^\]]*)\]\([^\n)]*\)/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
+    .replace(/\*\*([^*]+)\*\*/g, "$1")
+    .replace(/^\s*\*\s*\*\s*\*\s*$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 export function elapsed(start: string, end?: string) { const s = Math.max(0,Math.round((new Date(end || Date.now()).getTime() - new Date(start).getTime())/1000)); return s < 60 ? `${s}s` : `${Math.floor(s/60)}m ${s%60}s`; }
