@@ -21,13 +21,17 @@ export async function getRun(id:string): Promise<ResearchRun|null> {
   try {return JSON.parse(await fs.readFile(path.join(root,"runs",`${id}.json`),"utf8"));}
   catch(e) {if((e as NodeJS.ErrnoException).code==="ENOENT")return null;throw e;}
 }
-export async function saveRun(run:ResearchRun) {
+export async function saveRun(run:ResearchRun,options:{overrideCancelled?:boolean}={}) {
   validId(run.id); run.updatedAt=new Date().toISOString();
   if(storageMode()==="supabase") {
-    const {error}=await client().from("hirox_runs").upsert({id:run.id,title:run.title,status:run.status,created_at:run.createdAt,updated_at:run.updatedAt,data:run});
+    const row={title:run.title,status:run.status,updated_at:run.updatedAt,data:run};
+    const fresh=run.status==="queued"&&!run.events.length&&!options.overrideCancelled;
+    const query=fresh?client().from("hirox_runs").upsert({id:run.id,created_at:run.createdAt,...row}):client().from("hirox_runs").update(row).eq("id",run.id);
+    const {error}=await (fresh||options.overrideCancelled?query:query.neq("status","cancelled"));
     if(error) throw new Error(`Database save failed: ${error.message}`); return;
   }
   const dir=path.join(root,"runs");await fs.mkdir(dir,{recursive:true});
+  if(!options.overrideCancelled&&run.status!=="cancelled") {const current=await getRun(run.id);if(current?.status==="cancelled")return;}
   const temp=path.join(dir,`${run.id}.${randomUUID()}.tmp`);
   await fs.writeFile(temp,JSON.stringify(run),"utf8");await fs.rename(temp,path.join(dir,`${run.id}.json`));
 }

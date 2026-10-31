@@ -10,7 +10,7 @@ export async function PATCH(request:Request,ctx:Context){try{
   if(body.action==="cancel"){run.status="cancelled";await saveRun(run);return Response.json({ok:true});}
   if(body.action==="resume") {
     if(["queued","planning","discovering","researching"].includes(run.status)&&Date.now()-new Date(run.updatedAt).getTime()<5*60000)throw new Error("This run is still active. Wait for the current step to finish.");
-    run.status="queued";run.error=undefined;run.completedAt=undefined;await saveRun(run);await start(researchWorkflow,[id]);return Response.json({ok:true});
+    run.status="queued";run.error=undefined;run.completedAt=undefined;await saveRun(run,{overrideCancelled:true});await start(researchWorkflow,[id]);return Response.json({ok:true});
   }
   throw new Error("Unknown action.");
 }catch(e){return apiError(new Error(redactError(e)));}}

@@ -39,7 +39,7 @@ export async function crust<T=Record<string,unknown>>(endpoint:string,body?:unkn
 export function source(data:Omit<Source,"id"|"fetchedAt">):Source {return {...data,id:`s_${randomUUID().slice(0,8)}`,fetchedAt:new Date().toISOString()};}
 export async function searchWeb(query:string,report?:Reporter):Promise<Source[]> {
   const result=await crust<{results?:{title?:string;url?:string;link?:string;snippet?:string;description?:string}[]}>("/web/search/live",{query,sources:["web"]},report);
-  return (result.results||[]).filter(x=>safeUrl(x.url||x.link||"")).slice(0,8).map(x=>source({title:x.title||"Search result",url:safeUrl(x.url||x.link||""),content:x.snippet||x.description||"",provider:"Crustdata",kind:"search",status:"snippet",endpoint:"/web/search/live"}));
+  return (result.results||[]).filter(x=>{const url=safeUrl(x.url||x.link||"");return url&&!/^(?:www\.)?google\.[^/]+\/goto\b/i.test(new URL(url).host+new URL(url).pathname);}).slice(0,8).map(x=>source({title:x.title||"Search result",url:safeUrl(x.url||x.link||""),content:x.snippet||x.description||"",provider:"Crustdata",kind:"search",status:"snippet",endpoint:"/web/search/live"}));
 }
 export async function readPage(url:string,report?:Reporter):Promise<Source|null> {
   url=safeUrl(url);if(!url)return null;

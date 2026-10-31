@@ -11,10 +11,12 @@ export function validateAssessment(p:Prospect,seedOnly:boolean):Prospect {
   p.whyNow={...p.whyNow,sourceIds:p.whyNow.sourceIds.filter(id=>ids.has(id))};
   if(!p.whyNow.sourceIds.length)p.whyNow={text:"No recent, independently supported trigger established yet.",sourceIds:[]};
   const readable=p.sources.filter(s=>s.status==="fetched");
-  if(p.decision==="Meet"&&(!p.reasonsFor.length||readable.length<2)) {
+  const independentUrls=new Set(readable.map(s=>{try{return new URL(s.url).hostname.replace(/^www\./,"");}catch{return "";}}).filter(Boolean));
+  const originalWork=readable.some(s=>["article","project","social"].includes(s.kind));
+  if(p.decision==="Meet"&&(!p.reasonsFor.length||readable.length<2||independentUrls.size<2||!originalWork)) {
     p.decision="Watch";p.confidence="Limited";p.unknowns.push("More readable source evidence is needed before recommending outreach.");
   }
-  if(seedOnly&&p.kind==="company"&&/series[ _-]?[a-z]|public|ipo/i.test(p.stage)&&!/^unknown/i.test(p.stage)) {
+  if(seedOnly&&p.kind==="company"&&/^(?:series\s*[a-z]\b|post[ -]?series\s*[a-z]\b|ipo\b|publicly traded\b|listed company\b)/i.test(p.stage.trim())) {
     p.decision="Pass";p.thesisFit="Outside";
   }
   return p;
