@@ -52,3 +52,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,
 @media(max-width:1150px){.integration-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:800px){.sidebar nav .nav-item{font-size:0}.hero p{font-size:13px}}
 @media(max-width:520px){.integration-grid{grid-template-columns:1fr}.integration-card{min-height:0}.hero p{font-size:13px}.primary-button,.secondary-button{font-size:11px}}
+
+.hero-library{margin-top:18px;background:#fff;font-size:12px}
+@media(max-width:800px){.sidebar{flex-wrap:wrap;gap:12px}.sidebar nav{display:flex;flex-wrap:wrap;width:100%;margin-left:0;gap:4px}.sidebar nav .nav-item{font-size:11px;white-space:nowrap;padding:10px 9px;flex:1;justify-content:center;gap:7px}.sidebar nav .nav-item svg{flex:none;width:15px;height:15px}.sidebar nav .nav-count{margin-left:2px}.hero-library{margin-top:15px}}
+@media(max-width:520px){.sidebar nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.sidebar nav .nav-item{width:100%;font-size:12px;justify-content:flex-start;padding:11px 12px}}
