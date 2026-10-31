@@ -1,0 +1,8 @@
+const timeout=ms=>AbortSignal.timeout(ms);
+async function check(name,fn){try{console.log(`${name}: ${await fn()}`);}catch(error){console.log(`${name}: failed (${error instanceof Error?error.message:'unknown error'})`);process.exitCode=1;}}
+await Promise.all([
+  check('Crustdata',async()=>{const r=await fetch('https://api.crustdata.com/account/endpoints',{headers:{Authorization:`Bearer ${process.env.CRUSTDATA_API_KEY}`,'x-api-version':'2025-11-01'},signal:timeout(20000)});if(!r.ok)throw Error(`HTTP ${r.status}`);const data=await r.json();return `authenticated (${Object.keys(data).length} endpoint groups)`;}),
+  check('OpenAI',async()=>{const model=process.env.OPENAI_MODEL||'gpt-5-mini';const r=await fetch(`https://api.openai.com/v1/models/${encodeURIComponent(model)}`,{headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`},signal:timeout(20000)});if(!r.ok)throw Error(`HTTP ${r.status}`);return `${model} available`;}),
+  check('Supabase',async()=>{const r=await fetch(`${process.env.SUPABASE_URL}/rest/v1/`,{headers:{apikey:process.env.SUPABASE_SECRET_KEY,Authorization:`Bearer ${process.env.SUPABASE_SECRET_KEY}`},signal:timeout(20000)});if(!r.ok)throw Error(`HTTP ${r.status}`);return 'REST API authenticated';}),
+  check('Firecrawl',async()=>{const r=await fetch('https://api.firecrawl.dev/v2/scrape',{method:'POST',headers:{Authorization:`Bearer ${process.env.FIRECRAWL_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({url:'https://example.com',formats:['markdown'],onlyMainContent:true}),signal:timeout(25000)});if(!r.ok)throw Error(`HTTP ${r.status}`);const data=await r.json();if(!data.success||!data.data?.markdown)throw Error('No page content returned');return 'page extraction works';})
+]);

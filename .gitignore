@@ -7,6 +7,7 @@ node_modules/
 .hirox/
 .workflow-data/
 .workflow/
+src/app/.well-known/workflow/
 test-results/
 playwright-report/
 coverage/
@@ -15,3 +16,4 @@ npm-debug.log*
 *.pem
 *.key
 .DS_Store
+/.swc
