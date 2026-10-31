@@ -8,7 +8,7 @@ const root = path.join(process.cwd(), ".hirox");
 export function storageMode() { return process.env.HIROX_STORAGE === "supabase" ? "supabase" : "local"; }
 function client() {
   const url=process.env.SUPABASE_URL; const key=process.env.SUPABASE_SECRET_KEY;
-  if (!url || !key) throw new Error("Add SUPABASE_URL and SUPABASE_SECRET_KEY to connect your database.");
+  if (!url || !key) throw new Error("Saved research is unavailable. Check workspace connections.");
   return createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
 }
 function validId(id:string) { if(!/^[a-zA-Z0-9_-]{1,90}$/.test(id)) throw new Error("Invalid record identifier."); return id; }
@@ -16,7 +16,7 @@ export async function getRun(id:string): Promise<ResearchRun|null> {
   validId(id);
   if(storageMode()==="supabase") {
     const {data,error}=await client().from("hirox_runs").select("data").eq("id",id).maybeSingle();
-    if(error) throw new Error(`Database read failed: ${error.message}`); return data?.data as ResearchRun||null;
+    if(error) throw new Error("Could not load saved research. Please try again.",{cause:error}); return data?.data as ResearchRun||null;
   }
   try {return JSON.parse(await fs.readFile(path.join(root,"runs",`${id}.json`),"utf8"));}
   catch(e) {if((e as NodeJS.ErrnoException).code==="ENOENT")return null;throw e;}
@@ -28,7 +28,7 @@ export async function saveRun(run:ResearchRun,options:{overrideCancelled?:boolea
     const fresh=run.status==="queued"&&!run.events.length&&!options.overrideCancelled;
     const query=fresh?client().from("hirox_runs").upsert({id:run.id,created_at:run.createdAt,...row}):client().from("hirox_runs").update(row).eq("id",run.id);
     const {error}=await (fresh||options.overrideCancelled?query:query.neq("status","cancelled"));
-    if(error) throw new Error(`Database save failed: ${error.message}`); return;
+    if(error) throw new Error("Your changes could not be saved. Please try again.",{cause:error}); return;
   }
   const dir=path.join(root,"runs");await fs.mkdir(dir,{recursive:true});
   if(!options.overrideCancelled&&run.status!=="cancelled") {const current=await getRun(run.id);if(current?.status==="cancelled")return;}
@@ -39,7 +39,7 @@ export async function listRuns():Promise<RunSummary[]> {
   let runs:ResearchRun[]=[];
   if(storageMode()==="supabase") {
     const {data,error}=await client().from("hirox_runs").select("data").order("updated_at",{ascending:false}).limit(40);
-    if(error)throw new Error(`Database read failed: ${error.message}`);runs=(data||[]).map(x=>x.data as ResearchRun);
+    if(error)throw new Error("Could not load saved research. Please try again.",{cause:error});runs=(data||[]).map(x=>x.data as ResearchRun);
   }else {
     const dir=path.join(root,"runs");await fs.mkdir(dir,{recursive:true});
     const names=(await fs.readdir(dir)).filter(n=>n.endsWith(".json"));
@@ -60,6 +60,6 @@ export async function writeCache(key:string,value:unknown) {
 }
 export async function verifyDatabase() {
   const {error}=await client().from("hirox_runs").select("id").limit(1);
-  if(error)throw new Error(`Supabase: ${error.message}. Run npm run db:setup to create the tables.`);
-  return "Connected. Research tables are ready.";
+  if(error)throw new Error("Saved research could not be reached. Check this connection and try again.",{cause:error});
+  return "Saved research is available.";
 }

@@ -12,7 +12,7 @@ export async function GET(request:Request) {try{await guard(request);return Resp
 export async function POST(request:Request) {
   try {
     await guard(request);const input=inputSchema.parse(await request.json());
-    const missing=["CRUSTDATA_API_KEY","OPENAI_API_KEY"].filter(k=>!process.env[k]);if(missing.length)throw new Error(`Add ${missing.join(" and ")} to .env.local before starting live research.`);
+    const missing=["CRUSTDATA_API_KEY","OPENAI_API_KEY"].filter(k=>!process.env[k]);if(missing.length)throw new Error("Research needs an available data and analysis connection. Check workspace connections and try again.");
     const existing=await listRuns();if(existing.some(r=>["queued","planning","discovering","researching"].includes(r.status)&&Date.now()-new Date(r.updatedAt).getTime()<15*60000))throw new Error("A research run is already active. Open it or cancel it before starting another.");
     const now=new Date().toISOString();const run:ResearchRun={id:randomUUID(),title:input.thesis.slice(0,80),input,mode:"live",status:"queued",createdAt:now,updatedAt:now,prospects:[],events:[],warnings:[],apiCalls:0,cacheHits:0,tokens:0};
     await saveRun(run);

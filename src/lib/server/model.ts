@@ -4,11 +4,11 @@ import { z } from "zod";
 import type { ResearchRun } from "../types";
 
 export async function structured<T extends z.ZodType>(schema:T,name:string,instructions:string,input:unknown,run?:ResearchRun):Promise<z.infer<T>> {
-  if(!process.env.OPENAI_API_KEY)throw new Error("OPENAI_API_KEY is missing.");
+  if(!process.env.OPENAI_API_KEY)throw new Error("The analysis connection is unavailable. Check workspace connections.");
   const client=new OpenAI({apiKey:process.env.OPENAI_API_KEY,timeout:120000,maxRetries:1});
   const result=await client.responses.parse({model:process.env.OPENAI_MODEL||"gpt-5-mini",store:false,instructions,input:JSON.stringify(input),text:{format:zodTextFormat(schema,name)},max_output_tokens:6500});
   if(run){run.apiCalls++;run.tokens+=result.usage?.total_tokens||0;}
-  if(!result.output_parsed)throw new Error("The model did not return a usable structured result. Try a model enabled for your account.");
+  if(!result.output_parsed)throw new Error("The analysis could not be completed. Please try again.");
   return schema.parse(result.output_parsed) as z.infer<T>;
 }
 export const pointSchema=z.object({text:z.string(),sourceIds:z.array(z.string())});

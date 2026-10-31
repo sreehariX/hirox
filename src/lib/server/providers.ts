@@ -14,14 +14,14 @@ async function throttle(key:string,ms:number) {
   queues.set(key,next.catch(()=>{}));await next;
 }
 function errorMessage(status:number,body:string) {
-  if(status===401)return "API key was rejected. Check the local environment file.";
+  if(status===401)return "The connection could not be authenticated. Check workspace connections and try again.";
   if(status===402)return "The account does not have enough credits for this request.";
-  if(status===403)return "This endpoint or field is not enabled for this account.";
+  if(status===403)return "This source is not available to this workspace.";
   if(status===429)return "Rate limit reached. Try again shortly.";
   try {const j=JSON.parse(body);return String(j.message||j.detail||j.error?.message||j.error||`HTTP ${status}`).slice(0,350);}catch{return `Request returned HTTP ${status}.`;}
 }
 export async function crust<T=Record<string,unknown>>(endpoint:string,body?:unknown,report?:Reporter):Promise<T> {
-  const key=process.env.CRUSTDATA_API_KEY;if(!key)throw new ProviderError("Crustdata",401,"CRUSTDATA_API_KEY is missing.");
+  const key=process.env.CRUSTDATA_API_KEY;if(!key)throw new ProviderError("Crustdata",401,"The research data connection is unavailable. Check workspace connections.");
   const cacheKey=createHash("sha256").update(`crust:${key.slice(-8)}:${endpoint}:${JSON.stringify(body)}`).digest("hex");
   if(body) {const cached=await readCache(cacheKey);if(cached){await report?.({provider:"Crustdata",endpoint,cached:true,ok:true,message:"Saved result reused (within 24 hours)."});return cached as T;}}
   await throttle(endpoint,endpoint.includes("/web/")?6200:2100);

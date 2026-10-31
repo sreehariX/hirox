@@ -1,0 +1,3 @@
+export const DEFAULT_THESIS = "Find seed-stage companies building tools for reliable AI agents. Include researchers and independent builders doing relevant work. Exclude companies that have already announced a Series A or later. Explain who deserves a conversation and why.";
+
+export const WORKFLOW_THESIS = "Find early-stage startups and independent builders creating AI tools that automate finance and accounting workflows for businesses. Prioritize shipped products, relevant founder experience, and public evidence of customer use. Explain the case for meeting each prospect, the concerns, and what remains unknown. Exclude companies with a confirmed Series A or later. Do not assume anyone is fundraising.";
